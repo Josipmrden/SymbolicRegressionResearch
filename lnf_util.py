@@ -9,27 +9,58 @@ class LocalNeighboringField:
     def get_point(self, index):
         return self.local_field[index]
 
-    def get_x(self, index):
-        point = self.get_point(index)
-        return point[0]
+    def get_squared_no_columns(self):
+        return int(len(self.local_field[0]))
+    def get_linear_no_columns(self):
+        return int(len(self.local_field[0]))
+    def get_covariate_no_columns(self):
+        point_dim = len(self.local_field[0])
+        return int(point_dim * (point_dim - 1) / 2.0)
+    def get_no_columns_multidim(self):
+        return self.get_squared_no_columns() + self.get_linear_no_columns() + self.get_covariate_no_columns()
 
-    def get_y(self, index):
-        point = self.get_point(index)
-        return point[1]
-
-    def get_X_matrix(self):
+    def get_2D_X_matrix(self, ind1, ind2):
         size = len(self.local_field)
         dim = (size, 5)
         X = np.zeros(dim)
 
         for i in range(size):
-            x = (self.local_field[i])[0]
-            y = (self.local_field[i])[1]
+            x = (self.local_field[i])[ind1]
+            y = (self.local_field[i])[ind2]
             X[i][0] = x * x
-            X[i][1] = x * y
-            X[i][2] = y * y
+            X[i][1] = y * y
+            X[i][2] = x * y
             X[i][3] = x
             X[i][4] = y
+
+        return X
+
+    def get_X_matrix_multidim(self):
+        size = len(self.local_field)
+        point_dim = len(self.local_field[0])
+        no_columns = self.get_no_columns_multidim()
+        dim = (size, no_columns)
+        X = np.zeros(dim)
+
+        squared = self.get_squared_no_columns()
+        linear = self.get_linear_no_columns()
+
+        for i in range(size):
+            point = self.local_field[i]
+            count = 0
+
+            for j in range(squared):
+                X[i][count] = point[j] * point[j]
+                count += 1
+
+            for j in range(point_dim - 1):
+                for k in range(j + 1, point_dim):
+                    X[i][count] = point[j] * point[k]
+                    count += 1
+
+            for j in range(linear):
+                X[i][count] = point[j]
+                count += 1
 
         return X
 
