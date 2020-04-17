@@ -1,6 +1,6 @@
 import math
 from implicit_derivative_calculator import read_file
-from lnf_util import get_local_field
+from lnf_util import LocalNeighboringField
 import numpy as np
 
 epsylon = 10E-5
@@ -69,7 +69,7 @@ def get_cones_for_dataset(points, low_no_neighbors, high_no_neighbors):
         cone = None
 
         for no_neighbors in range(low_no_neighbors, high_no_neighbors):
-            lnf = get_local_field(point, points, no_neighbors)
+            lnf = LocalNeighboringField.get_local_field(point, points, no_neighbors)
             try:
                 cone = get_cone(lnf, 0, 1)
                 found = True

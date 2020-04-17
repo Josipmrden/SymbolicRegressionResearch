@@ -1,10 +1,13 @@
+'''
+This file is obsolete as it has been proven wrong in testing and calculating derivations of experimental data.
+'''
+
 from sphere_points_generator import generate_sphere
-from lnf_util import get_local_field
+from lnf_util import LocalNeighboringField
 from fitting_conic_planes import Cone, get_cone
+from functions import get_derivation, calc_sphere_rad5_xc0_yc0_zc0
 import numpy as np
 import math
-
-epsylon = 10E-5
 
 class MultiCone:
     def __init__(self, center, cones):
@@ -34,7 +37,7 @@ class MultiCone:
                     found = False
                     cone = None
                     for no_neighbors in range(low_no_neighbors, high_no_neighbors+1):
-                        lnf = get_local_field(point, points, no_neighbors)
+                        lnf = LocalNeighboringField.get_local_field(point, points, no_neighbors)
                         try:
                             cone = get_cone(lnf, j, k)
                             found = True
@@ -51,7 +54,6 @@ class MultiCone:
             if not found:
                 print("Jebiga")
                 continue
-            #print("Appended {} / {}".format(i, len(points)))
 
             successful_indexes.append(i)
             mc = MultiCone(point, point_cones)
@@ -59,31 +61,6 @@ class MultiCone:
 
         print("No points: {}".format(len(successful_indexes)))
         return successful_indexes, multi_cones
-
-def calculate(point):
-    x, y, z = point[0], point[1], point[2]
-    return x*x + y*y + z*z - 25
-
-def get_epsyloned_point(point, ind):
-    new_point = []
-    for i in range(len(point)):
-        if i == ind:
-            new_point.append(point[i] + epsylon)
-        else:
-            new_point.append(point[i])
-    return new_point
-
-def calculate_derivation(point, ind1, ind2):
-    v1_eps = get_epsyloned_point(point, ind1)
-    v2_eps = get_epsyloned_point(point, ind2)
-    still = calculate(point)
-    moved_v1 = calculate(v1_eps)
-    moved_v2 = calculate(v2_eps)
-    dv1 = moved_v1 - still
-    dv2 = moved_v2 - still
-    derr = - dv2/dv1
-
-    return derr
 
 def test_derivations(multi_cones, calculation_function, verbose=True):
     sample_size, var_size = len(multi_cones), len(multi_cones[0].center)
@@ -95,7 +72,7 @@ def test_derivations(multi_cones, calculation_function, verbose=True):
         for j in range(var_size - 1):
             for k in range(j + 1, var_size):
                 conederr = mc.get_derivation_at(point, j, k)
-                calc_derr = calculation_function(point, j, k)
+                calc_derr = calculation_function(calc_sphere_rad5_xc0_yc0_zc0, point, j, k)
                 error += math.log(1 + math.fabs(conederr - calc_derr))
                 if verbose:
                     print('{} {} {} {} {}'.format(i, j, k, calc_derr, conederr))
@@ -167,13 +144,13 @@ def test_derivations_from_files(path, ext, sizes, lows, highs, verbose):
             filename = "{}{}-{}-{}{}".format(path, size, low, high, ext)
             multi_cones = read_dataset(filename)
             print("Size of multicones: {}".format(len(multi_cones)))
-            error = test_derivations(multi_cones, calculate_derivation, verbose=verbose)
+            error = test_derivations(multi_cones, get_derivation, verbose=verbose)
             print("{} : {}".format(filename, error))
 
 #verified
 def test_veracity_of_sphere():
     data = generate_sphere(5, 20)
-    results = [float(calculate(x)) for x in data]
+    results = [float(calc_sphere_rad5_xc0_yc0_zc0(x)) for x in data]
     print(sum(results))
 
 if __name__ == '__main__':

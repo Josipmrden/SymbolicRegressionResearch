@@ -64,62 +64,50 @@ class LocalNeighboringField:
 
         return X
 
-def get_distance(p1, p2):
-    dist = 0.0
-    for i in range(len(p1)):
-        dist += (p1[i] - p2[i]) * (p1[i] - p2[i])
-    return math.sqrt(dist)
+    @staticmethod
+    def get_local_field(center, points, no_neighbors):
+        local_field = []
+        distances = []
 
-def get_max_distance_index(distances):
-    max_distance = -1
-    index = -1
+        max_distance = -1
+        max_index = -1
+        for i in range(len(points)):
+            point = points[i]
+            distance = LocalNeighboringField.get_distance_between_points(center, point)
 
-    for i in range(len(distances)):
-        distance = distances[i]
-        if index == -1:
-            index = i
-            max_distance = distance
-            continue
-        if distance > max_distance:
-            index = i
-            max_distance = distance
+            if len(local_field) < no_neighbors:
+                local_field.append(point)
+                distances.append(distance)
+                if max_distance == -1 or max_distance < distance:
+                    max_distance = distance
+                    max_index = i
+            elif max_distance > distance:
+                local_field[max_index] = point
+                distances[max_index] = distance
+                max_distance, max_index = LocalNeighboringField.get_max_distance(distances)
 
-    return index
+        return LocalNeighboringField(center, local_field)
 
-def get_max_distance(distances):
-    max_distance = -1
-    index = -1
+    @staticmethod
+    def get_distance_between_points(p1, p2):
+        dist = 0.0
+        for i in range(len(p1)):
+            dist += (p1[i] - p2[i]) * (p1[i] - p2[i])
+        return math.sqrt(dist)
 
-    for i in range(len(distances)):
-        distance = distances[i]
-        if index == -1:
-            index = i
-            max_distance = distance
-            continue
-        if distance > max_distance:
-            index = i
-            max_distance = distance
+    @staticmethod
+    def get_max_distance(distances):
+        max_distance = -1
+        index = -1
 
-    return max_distance
-
-def get_local_field(center, points, no_neighbors):
-    local_field = []
-    distances = []
-
-    max_distance = -1
-    for i in range(len(points)):
-        point = points[i]
-        distance = get_distance(center, point)
-
-        if len(local_field) < no_neighbors:
-            local_field.append(point)
-            distances.append(distance)
-            if max_distance == -1 or max_distance < distance:
+        for i in range(len(distances)):
+            distance = distances[i]
+            if index == -1:
+                index = i
                 max_distance = distance
-        elif max_distance > distance:
-            index = get_max_distance_index(distances)
-            local_field[index] = point
-            distances[index] = distance
-            max_distance = get_max_distance(distances)
+                continue
+            if distance > max_distance:
+                index = i
+                max_distance = distance
 
-    return LocalNeighboringField(center, local_field)
+        return max_distance, index

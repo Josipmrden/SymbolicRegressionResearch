@@ -16,8 +16,6 @@ def pithagora(variables):
     b = variables[1]
     return a*a + b*b
 
-
-
 def generate_sample_line(sample_domain, sample_codomain):
 
     string = ' '.join([str(x) for x in sample_domain])
