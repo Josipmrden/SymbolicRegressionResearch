@@ -1,11 +1,9 @@
 import numpy as np
-from fitting_conic_planes_multidimensional import get_epsyloned_point, calculate, calculate_derivation
 from sphere_points_generator import generate_sphere
-from lnf_util import get_local_field
+from lnf_util import LocalNeighboringField
 from fitting_conic_planes import calculate_conic_coefficients
+from functions import get_epsyloned_point, get_derivation, calc_sphere_rad5_xc0_yc0_zc0
 import math
-
-epsylon = 10E-5
 
 class MultiDimEllipse:
     def __init__(self, center, coeffs):
@@ -51,7 +49,7 @@ class MultiDimEllipse:
         return result
 
     @staticmethod
-    def get_multiellipse_for_dataset(points, low_no_neighbors, high_no_neighbors):
+    def create_multiellipses_for_dataset(points, low_no_neighbors, high_no_neighbors, verbose=False):
         successful_indexes = []
         multiellipses = []
 
@@ -62,7 +60,7 @@ class MultiDimEllipse:
             multi_dim_ellipse_coeffs = None
 
             for no_neighbors in range(low_no_neighbors, high_no_neighbors+1):
-                lnf = get_local_field(point, points, no_neighbors)
+                lnf = LocalNeighboringField.get_local_field(point, points, no_neighbors)
                 try:
                     multi_dim_ellipse_coeffs = calculate_conic_coefficients(lnf.get_X_matrix_multidim())
                     found = True
@@ -77,63 +75,82 @@ class MultiDimEllipse:
             successful_indexes.append(i)
             mc = MultiDimEllipse(point, multi_dim_ellipse_coeffs)
             multiellipses.append(mc)
+            if verbose:
+                print("{}/{}".format(i+1, len(points)))
 
         print("No points: {}".format(len(successful_indexes)))
         return successful_indexes, multiellipses
 
-def create_files_for_testing(path, ext, radius, points_sizes, low_no_neighbors, high_no_neighbors):
+    @staticmethod
+    def import_processed_dataset(filename):
+        f = open(filename, 'r')
+        lines = f.readlines()
+        f.close()
+        count = 0
+
+        sample_size_str, var_size_str = lines[0].split()
+        lines = lines[1:]
+        sample_size, var_size = int(sample_size_str), int(var_size_str)
+        multi_ellipses = []
+
+        for i in range(sample_size):
+            point_str = lines[count]
+            count += 1
+
+            multiellipse_str = lines[count]
+            count += 1
+
+            point = [float(x) for x in point_str.split()]
+            coeffs = [float(x) for x in multiellipse_str.split()]
+            multi_ellipses.append(MultiDimEllipse(point, coeffs))
+
+        return multi_ellipses
+
+    @staticmethod
+    def import_multiellipses(filename):
+        return MultiDimEllipse.import_processed_dataset(filename)
+
+    @staticmethod
+    def write_processed_dataset(multi_ellipses, filename):
+        sample_size = len(multi_ellipses)
+        var_size = len(multi_ellipses[0].center)
+
+        with open(filename, 'w') as f:
+            f.write(str(sample_size) + " " + str(var_size) + "\n")
+            for me in multi_ellipses:
+                f.write(str(me))
+
+    @staticmethod
+    def write_multiellipses(multi_ellipses, filename):
+        MultiDimEllipse.write_processed_dataset(multi_ellipses, filename)
+
+    def __repr__(self):
+        s = ""
+        point_line = " ".join([str(x) for x in self.center])
+        coeffs_line = " ".join([str(x) for x in self.coeffs])
+
+        s += point_line + "\n"
+        s += coeffs_line + "\n"
+        return s
+
+def create_sphere_files(path, ext, radius, points_sizes, low_no_neighbors, high_no_neighbors):
     for size in points_sizes:
         print("Interval coefficient: {}".format(size))
         data = generate_sphere(radius, size)
         print("Size of the generated dataset: {}".format(len(data)))
+
         for i in range(len(low_no_neighbors)):
             low = low_no_neighbors[i]
             high = high_no_neighbors[i]
-
-            indexes, multi_ellipses = MultiDimEllipse.get_multiellipse_for_dataset(data, low, high)
+            indexes, multi_ellipses = MultiDimEllipse.create_multiellipses_for_dataset(data, low, high)
 
             filename = "{}{}-{}-{}{}".format(path, size, low, high, ext)
-            write_ellipses(multi_ellipses, filename)
+            MultiDimEllipse.write_processed_dataset(multi_ellipses, filename)
             print("Saved " + filename)
 
-def write_ellipses(multi_ellipses, filename):
-    sample_size = len(multi_ellipses)
-    var_size = len(multi_ellipses[0].center)
-
-    with open(filename, 'w') as f:
-        f.write(str(sample_size) + " " + str(var_size) + "\n")
-        for me in multi_ellipses:
-            point_line = " ".join([str(x) for x in me.center])
-            f.write(point_line + "\n")
-            coeffs_line = " ".join([str(x) for x in me.coeffs])
-            f.write(coeffs_line + "\n")
-
-def read_dataset(filename):
-    f = open(filename, 'r')
-    lines = f.readlines()
-    f.close()
-    sample_size_str, var_size_str = lines[0].split()
-    lines = lines[1:]
-    sample_size, var_size = int(sample_size_str), int(var_size_str)
-    count = 0
-    multi_ellipses = []
-
-    for i in range(sample_size):
-        point_str = lines[count]
-        count += 1
-        multiellipse_str = lines[count]
-        count += 1
-        point = [float(x) for x in point_str.split()]
-        coeffs = [float(x) for x in multiellipse_str.split()]
-        multiellipse = MultiDimEllipse(point, coeffs)
-        multi_ellipses.append(multiellipse)
-
-    return multi_ellipses
-
-def test_derivations(multi_ellipses, calculation_function, verbose=True):
+def test_derivations(multi_ellipses, derivation_func, verbose=True):
     sample_size, var_size = len(multi_ellipses), len(multi_ellipses[0].center)
     error = 0.0
-    combinations_no = var_size * (var_size - 1) / 2.0
 
     for i in range(len(multi_ellipses)):
         ellipse = multi_ellipses[i]
@@ -141,12 +158,12 @@ def test_derivations(multi_ellipses, calculation_function, verbose=True):
         for j in range(var_size - 1):
             for k in range(j + 1, var_size):
                 conederr = ellipse.derivation_at(point, j, k)
-                calc_derr = calculation_function(point, j, k)
+                calc_derr = derivation_func(calc_sphere_rad5_xc0_yc0_zc0, point, j, k)
                 error += math.log(1 + math.fabs(conederr - calc_derr))
                 if verbose:
                     print('{} {} {} {} {}'.format(i, j, k, calc_derr, conederr))
 
-    error /= combinations_no
+    error /= len(multi_ellipses)
 
     return error
 
@@ -156,9 +173,9 @@ def test_derivations_from_files(path, ext, sizes, lows, highs, verbose):
             low = lows[i]
             high = highs[i]
             filename = "{}{}-{}-{}{}".format(path, size, low, high, ext)
-            multi_cones = read_dataset(filename)
+            multi_cones = MultiDimEllipse.import_multiellipses(filename)
             print("Size of multicones: {}".format(len(multi_cones)))
-            error = test_derivations(multi_cones, calculate_derivation, verbose=verbose)
+            error = test_derivations(multi_cones, get_derivation, verbose=verbose)
             print("{} : {}".format(filename, error))
 
 if __name__ == '__main__':
@@ -168,5 +185,4 @@ if __name__ == '__main__':
     path = "./datasets/sphere_me"
     ext = ".txt"
 
-    #create_files_for_testing(path, ext, 5, sizes, lows, highs)
-    test_derivations_from_files(path, ext, sizes, lows, highs, verbose=True)
+    test_derivations_from_files(path, ext, sizes, lows, highs, verbose=False)
