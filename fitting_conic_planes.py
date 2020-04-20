@@ -1,6 +1,7 @@
 import math
 from implicit_derivative_calculator import read_file
 from lnf_util import LocalNeighboringField
+from functions import calculate_conic_coefficients
 import numpy as np
 
 epsylon = 10E-5
@@ -164,17 +165,6 @@ def calculate_derivation(point):
     derr = - dy/dx
 
     return derr
-
-def calculate_conic_coefficients(x):
-    xt = x.T
-    ones = np.ones((x.shape[0], 1))
-    xtx = np.matmul(xt, x)
-    xtx1 = np.linalg.inv(xtx)
-    xtx1xt = np.matmul(xtx1, xt)
-    result = np.matmul(xtx1xt, ones)
-
-    coeffs = [result[i][0] for i in range(x.shape[1])]
-    return list(coeffs)
 
 def get_cone(lnf, ind1, ind2):
     x = lnf.get_2D_X_matrix(ind1, ind2)

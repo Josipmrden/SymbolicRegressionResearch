@@ -1,7 +1,8 @@
-import numpy as np
-from os import walk
+from os import walk, path
 import random
-from multi_dimensional_ellipse import MultiDimEllipse
+from ellipse_plane import MultiDimEllipse, MultiDimEllipseCreator
+from linear_plane import MultiLinearCovariatePlane, MultiLinearCovariatePlaneCreator, \
+    MultiLinearBasicPlane, MultiLinearBasicPlaneCreator
 
 class DataSetStats:
     def __init__(self, no_samples, no_vars, mins, maxs, avgs, stdevs):
@@ -55,8 +56,12 @@ class DataSet:
             self.initialize()
         return self.stats
 
-    def write_dataset(self, filename, no_points):
-        cut_dataset = self.data[:no_points]
+    def write_dataset(self, filename, no_points=None):
+        if no_points is None:
+            cut_dataset = self.data
+        else:
+            cut_dataset = self.data[:no_points]
+
         with open(filename, 'w') as f:
             for point in cut_dataset:
                 point_line = " ".join([str(x) for x in point])
@@ -83,51 +88,45 @@ class DataSet:
         dataset.write_dataset(dest, no_samples)
 
     @staticmethod
-    def cut_multiple_datasets(dir_name, dest_dir_name):
+    def cut_multiple_datasets(dir_name, dest_dir_name, no_samples):
         for (dirpath, dirnames, filenames) in walk(dir_name):
             for i, file in enumerate(filenames):
-                marginal_no_samples = 1000
-
                 src_filename = dir_name + "/" + file
-                dest_filename = dest_dir_name + "/" + file
-                dataset = DataSet.import_dataset(src_filename)
-                no_samples = dataset.get_no_samples()
-                print(file + " " + str(no_samples))
-                cut_no_samples = int(no_samples / 100)
-                if cut_no_samples < marginal_no_samples:
-                    cut_no_samples = marginal_no_samples
-                cut_filename = dest_filename + "-cut-{}".format(cut_no_samples)
-                random.shuffle(dataset.data)
-                dataset.write_dataset(cut_filename, cut_no_samples)
-                print("{}/{} Written dataset: {}".format(i+1, len(filenames), cut_filename))
+                cut_filename = dest_dir_name + "/" + file + "-cut-{}".format(no_samples)
+                cut_filename = cut_filename.replace("-cut", "")
+
+                if path.exists(cut_filename):
+                    print("Path exists: {}".format(cut_filename))
+                else:
+                    DataSet.cut_dataset(src_filename, cut_filename, no_samples)
+                    print("{}/{} Written dataset: {}".format(i+1, len(filenames), cut_filename))
 
 class DataPreprocessor:
-
     @staticmethod
-    def get_ellipses_for_dataset(dataset, low, high):
+    def get_planes_for_dataset(plane_creator, dataset, low, high):
         points = dataset.data
-        _, ellipses = MultiDimEllipse.create_multiellipses_for_dataset(points, low, high, verbose=True)
+        _, planes = plane_creator.create_planes_for_dataset(points=points, low_no_neighbors=low, high_no_neighbors=high, verbose=False)
 
-        return ellipses
+        return planes
 
     @staticmethod
-    def preprocess_dataset(src_path, low, high, dest_path):
+    def preprocess_dataset(plane_creator, src_path, low, high, dest_path):
         dataset = DataSet.import_dataset(src_path)
-        ellipses = DataPreprocessor.get_ellipses_for_dataset(dataset, low, high)
-        MultiDimEllipse.write_multiellipses(ellipses, dest_path)
+        _, planes = plane_creator.create_planes_for_dataset(dataset.data, low, high)
+        plane_creator.write_plane(planes, dest_path)
 
     @staticmethod
-    def preprocess_datasets_in_directory(src_path, low, high, dest_path):
+    def preprocess_datasets_in_directory(plane_creator, src_path, low, high, dest_path):
         for (dirpath, dirnames, filenames) in walk(src_path):
             for i, file in enumerate(filenames):
                 src_filename = dirpath + "/" + file
                 dest_filename = "{}/{}-{}-{}".format(dest_path, file, low, high)
-                DataPreprocessor.preprocess_dataset(src_filename, low, high, dest_filename)
+                DataPreprocessor.preprocess_dataset(plane_creator, src_filename, low, high, dest_filename)
                 print("Preprocessed {}/{}: {}".format(i+1, len(filenames), dest_filename))
 
 if __name__ == '__main__':
-    DataPreprocessor.preprocess_dataset("./datasets/Feynman_with_units/cut/I.6.2a-cut-10000",
-                       100,
-                       150, "poc/162a-100-150")
-    #cut_datasets_in_directory('./datasets/Feynman_with_units/original', dest_dir_name='./datasets/Feynman_with_units/cut')
-    #preprocess_datasets('./datasets/Feynman_with_units/cut', low=100, high=150, dest_path='./datasets/Feynman_with_units/processed_datasets')
+    #DataPreprocessor.preprocess_dataset("./datasets/Feynman_with_units/cut/I.6.2a-cut-10000", 100, 150, "poc/162a-100-150")
+    #DataSet.cut_multiple_datasets('./datasets/Feynman_with_units/original', './datasets/Feynman_with_units/cut', 100)
+    plane_creator = MultiDimEllipseCreator()
+    DataPreprocessor.preprocess_dataset(plane_creator, './datasets/Feynman_with_units/cut/I.13.4-100', low=10, high=20, dest_path='./datasets/Feynman_with_units/processed_datasets/I.13.4-100-10-20')
+    pass
