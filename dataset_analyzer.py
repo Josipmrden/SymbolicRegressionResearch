@@ -3,6 +3,7 @@ import random
 from ellipse_plane import MultiDimEllipse, MultiDimEllipseCreator
 from linear_plane import MultiLinearCovariatePlane, MultiLinearCovariatePlaneCreator, \
     MultiLinearBasicPlane, MultiLinearBasicPlaneCreator
+import numpy as np
 
 class DataSetStats:
     def __init__(self, no_samples, no_vars, mins, maxs, avgs, stdevs):
@@ -123,10 +124,3 @@ class DataPreprocessor:
                 dest_filename = "{}/{}-{}-{}".format(dest_path, file, low, high)
                 DataPreprocessor.preprocess_dataset(plane_creator, src_filename, low, high, dest_filename)
                 print("Preprocessed {}/{}: {}".format(i+1, len(filenames), dest_filename))
-
-if __name__ == '__main__':
-    #DataPreprocessor.preprocess_dataset("./datasets/Feynman_with_units/cut/I.6.2a-cut-10000", 100, 150, "poc/162a-100-150")
-    #DataSet.cut_multiple_datasets('./datasets/Feynman_with_units/original', './datasets/Feynman_with_units/cut', 100)
-    plane_creator = MultiDimEllipseCreator()
-    DataPreprocessor.preprocess_dataset(plane_creator, './datasets/Feynman_with_units/cut/I.13.4-100', low=10, high=20, dest_path='./datasets/Feynman_with_units/processed_datasets/I.13.4-100-10-20')
-    pass

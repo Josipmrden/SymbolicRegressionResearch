@@ -1,4 +1,5 @@
 from setup import *
+from functions import calculate_conic_coefficients, least_squares_XAB
 
 class MultiLinearCovariatePlane(MultiDimPlane):
     def __init__(self, center, coeffs):
@@ -54,6 +55,10 @@ class MultiLinearCovariatePlaneCreator(PlaneCreator):
 
         return X
 
+    @abstractmethod
+    def calculate_conic_coefficients(self, lnf):
+        return calculate_conic_coefficients(self.get_X_matrix(lnf))
+
 class MultiLinearBasicPlane(MultiDimPlane):
     def __init__(self, center, coeffs):
         super().__init__(center, coeffs)
@@ -61,10 +66,11 @@ class MultiLinearBasicPlane(MultiDimPlane):
     def value_at(self, point):
         result = 0.0
 
-        for i in range(self.get_dim()):
+        for i in range(self.get_dim() - 1):
             result += self.coeffs[i] * point[i]
 
-        result -= 1.0
+        result -= self.coeffs[self.get_dim() - 1]
+        result -= point[self.get_dim() - 1]
 
         return result
 
@@ -81,10 +87,29 @@ class MultiLinearBasicPlaneCreator(PlaneCreator):
         for i in range(size):
             point = lnf.get_point(i)
             count = 0
-
             for j in range(len(point)):
                 X[i][count] = point[j]
                 count += 1
 
         return X
+
+    def calculate_conic_coefficients(self, lnf):
+        size = len(lnf.local_field)
+        point_dim = len(lnf.get_point(0))
+        dim = (size, point_dim)
+        X = np.zeros(dim)
+        b = np.zeros((size, 1))
+        for i in range(size):
+            point = lnf.get_point(i)
+            count = 0
+            for j in range(len(point)):
+                if j == len(point) - 1:
+                    X[i][count] = 1
+                    continue
+                X[i][count] = point[j]
+                count += 1
+            b[i] = point[point_dim - 1]
+
+        coeffs = least_squares_XAB(X, b)
+        return coeffs
 

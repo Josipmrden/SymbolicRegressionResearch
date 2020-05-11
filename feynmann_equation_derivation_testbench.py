@@ -1,6 +1,8 @@
 from functions import *
 from os import walk
 from ellipse_plane import *
+from dataset_analyzer import DataSet, DataPreprocessor
+from polynomial_plane import *
 
 def test_derivations(multi_ellipses, func, verbose=True):
     sample_size, var_size = len(multi_ellipses), len(multi_ellipses[0].center)
@@ -20,13 +22,12 @@ def test_derivations(multi_ellipses, func, verbose=True):
                     print('{} {} {} {} {} {}'.format(i, j, k, calc_derr, conederr, offset_from_zero))
 
     error /= len(multi_ellipses)
-    print(f"Zero offset: {offset_from_zero_total}, Derivation error: {error}, #NO Ellipses: {len(multi_ellipses)}")
+    print(f"Zero offset: {offset_from_zero_total}, Derivation error: {error}, #NO. Planes: {len(multi_ellipses)}")
     return error, offset_from_zero_total
 
 def test_bench(plane_creator, filename, calculation_func, verbose=False):
     planes = plane_creator.import_processed_dataset(filename)
     error, offset_from_zero_total = test_derivations(planes, calculation_func, verbose=verbose)
-    print(f"{filename} -> Zero offset: {offset_from_zero_total}, Derivation error: {error}, #NO Planes: {len(planes)}")
 
 def test_multiple_files(plane_creator, start_directory, dataset_filenames, calculation_functions):
     for (dirpath, dirnames, filenames) in walk(start_directory):
@@ -37,52 +38,26 @@ def test_multiple_files(plane_creator, start_directory, dataset_filenames, calcu
                     test_bench(plane_creator, src_filename, calc_func)
 
 if __name__ == '__main__':
-    #test_bench('poc/162a-100000-50-100', calc1_6_20_a, verbose=False)
+    dataset_name = "I.6.2a"
+    calc_func = calc_1_6_20_a
+    no_samples = 1000
+    lows = [10, 20, 30, 40, 50, 60, 100, 200, 300]
+    highs = [20, 30, 40, 50, 60, 70, 150, 250, 350]
     plane_creator = MultiDimEllipseCreator()
-    test_bench(plane_creator, 'poc/162a-2500-300-350', calc_1_6_20_a)
-    #test_bench('poc/162a-100000-50-100', calc1_6_20_a, verbose=False)
-    filenames = [
-        'I.6.2a',
-        'I.8.14',
-        'I.11.19',
-        'I.13.4',
-        'I.14.3',
-        'I.15.10',
-        'I.18.14',
-        'I.26.2',
-        'I.37.4',
-        'I.40.1',
-        'I.50.26',
-        'II.4.23',
-        'II.6.15b',
-        'II.10.9',
-        'II.21.32',
-        'II.24.17',
-        'II.35.18',
-        'II.37.1',
-        'III.8.54',
-        'III.15.12',
-    ]
-    calc_funcs = [
-        calc_1_6_20_a,
-        calc_1_8_14,
-        calc_1_11_19,
-        calc_1_13_4,
-        calc_1_14_3,
-        calc_1_15_10,
-        calc_1_18_16,
-        calc_1_26_2,
-        calc_1_37_4,
-        calc_1_40_1,
-        calc_1_50_26,
-        calc_2_4_23,
-        calc_2_6_15b,
-        calc_2_10_9,
-        calc_2_21_32,
-        calc_2_24_17,
-        calc_2_35_18,
-        calc_2_37_1,
-        calc_3_8_54,
-        calc_3_15_12
-    ]
-    test_multiple_files(plane_creator, './datasets/Feynman_with_units/processed_datasets', filenames, calc_funcs)
+
+    cut = True
+    process = True
+    calc_error = True
+    verbose = False
+
+    original_filename = f"./datasets/Feynman_with_units/original/{dataset_name}"
+    cut_filename = f"./datasets/Feynman_with_units/cut/{dataset_name}-{no_samples}"
+
+    if cut:
+        DataSet.cut_dataset(original_filename, cut_filename, no_samples)
+    for low, high in zip(lows, highs):
+        processed_filename = f"./poc/{dataset_name}-{no_samples}-{low}-{high}"
+        if process:
+            DataPreprocessor.preprocess_dataset(plane_creator, cut_filename, low, high, processed_filename)
+        if calc_error:
+            test_bench(plane_creator, processed_filename, calc_func, verbose=verbose)

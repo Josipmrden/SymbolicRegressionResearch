@@ -3,6 +3,7 @@ import numpy as np
 
 epsylon = 10E-5
 
+#((A^TxA)^-1)xA^Tx1
 def calculate_conic_coefficients(x):
     xt = x.T
     ones = np.ones((x.shape[0], 1))
@@ -10,6 +11,16 @@ def calculate_conic_coefficients(x):
     xtx1 = np.linalg.inv(xtx)
     xtx1xt = np.matmul(xtx1, xt)
     result = np.matmul(xtx1xt, ones)
+
+    coeffs = [result[i][0] for i in range(x.shape[1])]
+    return list(coeffs)
+
+def least_squares_XAB(x, b):
+    xt = x.T
+    xtx = np.matmul(xt, x)
+    xtx1 = np.linalg.inv(xtx)
+    xtx1xt = np.matmul(xtx1, xt)
+    result = np.matmul(xtx1xt, b)
 
     coeffs = [result[i][0] for i in range(x.shape[1])]
     return list(coeffs)
@@ -39,6 +50,12 @@ def calc_sphere_rad5_xc0_yc0_zc0(point):
     x, y, z = point[0], point[1], point[2]
     return x*x + y*y + z*z - 25
 
+def sphere_calc_func(radius, xc, yc, zc):
+    def calc_sphere(point):
+        x, y, z = point[0], point[1], point[2]
+        return (x-xc)**2 + (y-yc)**2 + (z-zc)**2 - radius*radius
+    return calc_sphere
+
 """
 Solved by Eureka: N0
 
@@ -50,6 +67,20 @@ def calc_1_6_20_a(point):
     theta = point[0]
     f = point[1]
     return f - math.exp(-theta*theta / 2.0) / math.sqrt(2.0 * math.pi)
+
+"""
+Solved by Eureka: N0
+
+Solved by AI-Feynman: YES
+Data needed: 100
+Solution time (s): 2992
+"""
+def calc_1_6_2(point):
+    sigma = point[0]
+    theta = point[1]
+    f = point[2]
+    return f - math.exp(-theta*theta / (2.0 * sigma * sigma)) / math.sqrt(2.0 * math.pi * sigma * sigma)
+
 
 """
 Solved by Eureka: N0
@@ -70,8 +101,8 @@ def calc_1_8_14(point):
 Solved by Eureka: YES
 
 Solved by AI-Feynman: YES
-Data needed: 100
-Solution time (s): 184
+Data needed: 10
+Solution time (s): 12
 """
 def calc_1_11_19(point):
     x1 = point[0]
@@ -82,6 +113,19 @@ def calc_1_11_19(point):
     y3 = point[5]
     A = point[6]
     return A - (x1*y1 + x2*y2 + x3*y3)
+
+"""
+Solved by Eureka: YES
+
+Solved by AI-Feynman: YES
+Data needed: 100
+Solution time (s): 184
+"""
+def calc_1_12_1(point):
+    mi = point[0]
+    nn = point[1]
+    F = point[2]
+    return F - mi * nn
 
 """
 Solved by Eureka: YES

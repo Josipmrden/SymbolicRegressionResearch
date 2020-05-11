@@ -1,5 +1,5 @@
 from sphere_points_generator import generate_sphere
-from functions import get_derivation, calc_sphere_rad5_xc0_yc0_zc0
+from functions import get_derivation, calc_sphere_rad5_xc0_yc0_zc0, calculate_conic_coefficients
 import math
 from setup import *
 
@@ -31,39 +31,6 @@ class MultiDimEllipse(MultiDimPlane):
 class MultiDimEllipseCreator(PlaneCreator):
     def get_plane_class(self):
         return MultiDimEllipse
-
-    def import_processed_dataset(self, filename):
-        f = open(filename, 'r')
-        lines = f.readlines()
-        f.close()
-        count = 0
-
-        sample_size_str, var_size_str = lines[0].split()
-        lines = lines[1:]
-        sample_size, var_size = int(sample_size_str), int(var_size_str)
-        multi_ellipses = []
-
-        for i in range(sample_size):
-            point_str = lines[count]
-            count += 1
-
-            multiellipse_str = lines[count]
-            count += 1
-
-            point = [float(x) for x in point_str.split()]
-            coeffs = [float(x) for x in multiellipse_str.split()]
-            multi_ellipses.append(MultiDimEllipse(point, coeffs))
-
-        return multi_ellipses
-
-    def write_processed_dataset(self, multi_ellipses, filename):
-        sample_size = len(multi_ellipses)
-        var_size = len(multi_ellipses[0].center)
-
-        with open(filename, 'w') as f:
-            f.write(str(sample_size) + " " + str(var_size) + "\n")
-            for me in multi_ellipses:
-                f.write(str(me))
 
     def get_squared_no_columns(self, lnf):
         return int(len(lnf.get_point(0)))
@@ -101,6 +68,9 @@ class MultiDimEllipseCreator(PlaneCreator):
                 X[i][count] = point[j]
                 count += 1
         return X
+
+    def calculate_conic_coefficients(self, lnf):
+        return calculate_conic_coefficients(self.get_X_matrix(lnf))
 
 def create_sphere_files(path, ext, radius, points_sizes, low_no_neighbors, high_no_neighbors):
     for size in points_sizes:

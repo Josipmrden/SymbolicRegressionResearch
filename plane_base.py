@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from functions import get_epsyloned_point
 from lnf_util import LocalNeighboringField
-from functions import calculate_conic_coefficients
 import numpy as np
 
 
@@ -60,6 +59,10 @@ class PlaneCreator(ABC):
         self.write_processed_dataset(planes, filename)
 
     @abstractmethod
+    def calculate_conic_coefficients(self, lnf):
+        pass
+
+    @abstractmethod
     def get_plane_class(self):
         pass
 
@@ -76,7 +79,7 @@ class PlaneCreator(ABC):
             for no_neighbors in range(low_no_neighbors, high_no_neighbors + 1):
                 lnf = LocalNeighboringField.get_local_field(point, points, no_neighbors)
                 try:
-                    multiplane_coeffs = calculate_conic_coefficients(self.get_X_matrix(lnf))
+                    multiplane_coeffs = self.calculate_conic_coefficients(lnf)
                     found = True
                     break
                 except np.linalg.LinAlgError:
