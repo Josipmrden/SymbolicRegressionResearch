@@ -124,3 +124,7 @@ class DataPreprocessor:
                 dest_filename = "{}/{}-{}-{}".format(dest_path, file, low, high)
                 DataPreprocessor.preprocess_dataset(plane_creator, src_filename, low, high, dest_filename)
                 print("Preprocessed {}/{}: {}".format(i+1, len(filenames), dest_filename))
+
+
+if __name__ == '__main__':
+    DataSet.cut_dataset('./datasets/Feynman_with_units/original/I.18.4', './datasets/Feynman_with_units/cut/I.18.4', 1000)

@@ -5,6 +5,9 @@ from dataset_analyzer import DataSet, DataPreprocessor
 from polynomial_plane import *
 
 def test_derivations(multi_ellipses, func, verbose=True):
+    if len(multi_ellipses) == 0:
+        print("Every point failed!")
+        return 0, 0
     sample_size, var_size = len(multi_ellipses), len(multi_ellipses[0].center)
     error = 0.0
     offset_from_zero_total = 0.0

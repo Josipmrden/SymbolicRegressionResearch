@@ -189,6 +189,21 @@ def calc_1_18_16(point):
 Solved by Eureka: YES
 
 Solved by AI-Feynman: YES
+Data needed: 10
+Solution time (s): 22
+"""
+def calc_1_18_4(point):
+    m1 = point[0]
+    m2 = point[1]
+    r1 = point[2]
+    r2 = point[3]
+    r = point[4]
+    return r - (m1*r1 + m2*r2) / (m1+m2)
+
+"""
+Solved by Eureka: YES
+
+Solved by AI-Feynman: YES
 Data needed: 100
 Solution time (s): 530
 """
